@@ -2,6 +2,7 @@ import uiautomator2 as u2
 # import commands
 import os
 import time
+from threading import Thread
 
 
 def auto_ui(phone_ip):
@@ -14,8 +15,9 @@ def auto_ui(phone_ip):
     start_monkey_cmd = 'adb shell monkey -p com.taobao.taobao --throttle 100 --ignore-crashes --ignore-timeouts --ignore-security-exceptions --ignore-native-crashes --monitor-native-crashes -v -v -v 500 > /tmp/test.log'
 
     # run adb
-    rt = os.system(start_monkey_cmd)
+    # rt = os.system(start_monkey_cmd)
     # print("adb result: %s" % rt)
+    device.app_stop_all()
 
     # 黑屏
     print("screen off")
@@ -32,8 +34,9 @@ def auto_ui(phone_ip):
     #
     #
     # print("screen shot")
-    device.app_stop('com.taobao.taobao')
-    device.app_start('com.android.browser')
+    #device.app_stop('com.taobao.taobao')
+
+    # device.app_start('com.android.browser')
     # app = device.session('com.android.browser', True)
 
     start_time = int(time.time())
@@ -45,8 +48,9 @@ def auto_ui(phone_ip):
         print("current app: %s" % cpp)
 
         if cpp['package'] == 'com.android.browser':
-            device.screenshot('/tmp/shot_%s.jpg' % shot_count)
-            shot_count = shot_count + 1
+            return False
+            #device.screenshot('/tmp/shot_%s_%s.jpg' % (phone_ip, shot_count))
+            #shot_count = shot_count + 1
 
         # sleep 2s
         time.sleep(2)
@@ -55,12 +59,32 @@ def auto_ui(phone_ip):
         if end_time - start_time > 6:
             break
 
-    print("test end!!!")
+    device.app_start('com.android.browser')
+    if device(className="android.webkit.WebView"):
+        print("has web view")
+        return False
+    else:
+        print("has't web view")
+        return True
+
+    # print("test end!!!")
 
 
-phone_ips = ['192.168.0.1', '192.168.0.2', '192.168.0.3', '192.168.0.4']
+def find_bugs(phone_ip):
 
-auto_ui('1')
-auto_ui('1')
-auto_ui('1')
-auto_ui('1')
+    while True:
+        if auto_ui(phone_ip) is False:
+            break
+
+
+if __name__ == '__main__':
+    t1 = Thread(target=find_bugs, args=('192.168.0.100',))
+    # t2 = Thread(target=auto_ui, args=('192.168.0.102',))
+
+    t1.start()
+    print('线程1启动')
+
+    # t2.start()
+    print('线程2启动')
+
+# phone_ips = ['192.168.0.100', '192.168.0.102']
