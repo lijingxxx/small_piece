@@ -5,86 +5,106 @@ import time
 from threading import Thread
 
 
+def monkey(device):
+    device.adb_shell('monkey -p jingdong.app.mall -p com.sina.weibo -p com.tencent.mobileqq -p com.netease.cliudmusic -p com.taobao.taobao -p com.tencent.mm --throttle 100 --ignore-crashes --ignore-timeouts --ignore-security-exceptions --ignore-native-crashes --monitor-native-crashes -v -v -v 2000000')
+
+
 def auto_ui(phone_ip):
-    # device = u2.connect('192.168.0.101')  # alias for u2.connect_wifi('10.0.0.1')
     device = u2.connect(phone_ip)
     print(device.info)
-    device.healthcheck()
 
-    # device.app_start('com.android.browser')
-    start_monkey_cmd = 'adb shell monkey -p com.taobao.taobao --throttle 100 --ignore-crashes --ignore-timeouts --ignore-security-exceptions --ignore-native-crashes --monitor-native-crashes -v -v -v 500 > /tmp/test.log'
+    monkey_start = Thread(target=monkey, args=(device,))
+    monkey_start.start()
 
-    # run adb monkey
-    # rt = os.system(start_monkey_cmd)
-    # print("adb result: %s" % rt)
-    device.app_stop_all()
+    # adb shell kill -9 `adb shell ps | grep com.android.commands.monkey | awk '{print $2}'`
+    time.sleep(1800)
+    pid = device.adb_shell("ps | grep monkey").split()[1]
+    print("%s monkey pid is: %s" % (phone_ip, pid) + ",kill it")
+    device.adb_shell("kill -9 " + pid)
 
-    # 黑屏
-    print("screen off")
+    print("执行完monkey，%s sleep 2 second..." % phone_ip)
+    time.sleep(2)
+
+    # 灭屏
+    print("%s screen off" % phone_ip)
     device.screen_off()
 
-    time.sleep(3)
+    print("%s sleep 5 second..." % phone_ip)
+    time.sleep(5)
 
     # 亮屏
-    print("screen on")
+    print("%s screen on" % phone_ip)
     device.screen_on()
 
-    # browser = device.app_start('com.android.browser')
-    # device(resourceId="com.android.browser:id/search_hint").click()
-    #
-    #
-    # print("screen shot")
-    #device.app_stop('com.taobao.taobao')
+    print("亮屏后%s sleep 1 second..." % phone_ip)
+    time.sleep(1)
+    if device(packageName="com.android.systemui"):
+        print("%s 上划开屏" % phone_ip)
+        device.swipe(0.5, 0.835, 0.5, 0.295, duration=0.2)
 
-    # device.app_start('com.android.browser')
-    # app = device.session('com.android.browser', True)
+    print("%s sleep 10 second...检查是否自动打开浏览器" % phone_ip)
+    time.sleep(10)
 
-    start_time = int(time.time())
-    shot_count = 0
+    # 获取当前界面应用包名
+    cpp = device.current_app()
 
-    while True:
-        # 每隔2秒截一张图, 截10次
-        cpp = device.current_app()
-        print("current app: %s" % cpp)
+    if cpp['package'] == 'com.android.browser':
+        print("%s 自启动浏览器，复现问题" % phone_ip)
+        return False
 
-        if cpp['package'] == 'com.android.browser':
-            return False
-            #device.screenshot('/tmp/shot_%s_%s.jpg' % (phone_ip, shot_count))
-            #shot_count = shot_count + 1
-
-        # sleep 2s
-        time.sleep(2)
-
-        end_time = int(time.time())
-        if end_time - start_time > 6:
-            break
-
+    # 打开浏览器后判断当前界面是否为网页
     device.app_start('com.android.browser')
-    if device(className="android.webkit.WebView"):
-        print("has web view")
+    print("%s sleep 10 second...检查是否自动打开网页" % phone_ip)
+    time.sleep(10)
+    if device(className="android.webkit.WebView") or device(className="com.uc.webview.export.WebView"):
+        print("%s has web view，复现问题" % phone_ip)
         return False
     else:
-        print("has't web view")
-        return True
+        print("%s has't web view" % phone_ip)
 
-    # print("test end!!!")
+    print("没有复现，%s sleep 1 second..." % phone_ip)
+    time.sleep(1)
+
+    # 退出浏览器应用
+    device.app_stop('com.android.browser')
+    print("%s 没有复现，重新执行脚本" % phone_ip)
+
+    print("%s sleep 1 second..." % phone_ip)
+    time.sleep(1)
+
+    print("%s test end!!!" % phone_ip)
+    return True
 
 
 def find_bugs(phone_ip):
-
     while True:
-        if auto_ui(phone_ip) is False:
+        try:
+            print("%s auto ui start..." % (phone_ip, ))
+            rt = auto_ui(phone_ip)
+            print("%s auto ui complete, rt: %s" % (phone_ip, rt))
+            if rt is False:
+                break
+        except Exception as e:
+            print("auto ui exception: %s, %s" % (phone_ip, e))
             break
 
 
 if __name__ == '__main__':
-    t1 = Thread(target=find_bugs, args=('192.168.0.100',))
-    # t2 = Thread(target=auto_ui, args=('192.168.0.102',))
 
+    t1 = Thread(target=find_bugs, args=('172.18.8.16',))
     t1.start()
     print('线程1启动')
 
-    # t2.start()
+    t2 = Thread(target=find_bugs, args=('172.18.8.240',))
+    t2.start()
     print('线程2启动')
 
-# phone_ips = ['192.168.0.100', '192.168.0.102']
+    t3 = Thread(target=find_bugs, args=('172.18.8.12',))
+    t3.start()
+    print('线程3启动')
+
+    t4 = Thread(target=find_bugs, args=('172.18.8.13',))
+    t4.start()
+    print('线程4启动')
+
+
