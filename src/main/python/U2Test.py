@@ -1,12 +1,10 @@
 import uiautomator2 as u2
-# import commands
-import os
 import time
 from threading import Thread
 
 
 def monkey(device):
-    device.adb_shell('monkey -p jingdong.app.mall -p com.sina.weibo -p com.tencent.mobileqq -p com.netease.cliudmusic -p com.taobao.taobao -p com.tencent.mm --throttle 100 --ignore-crashes --ignore-timeouts --ignore-security-exceptions --ignore-native-crashes --monitor-native-crashes -v -v -v 2000000')
+    device.adb_shell('monkey -p jingdong.app.mall -p com.sina.weibo -p com.tencent.mobileqq -p com.netease.cliudmusic -p com.taobao.taobao -p com.tencent.mm --throttle 500 --ignore-crashes --ignore-timeouts --ignore-security-exceptions --ignore-native-crashes --monitor-native-crashes -v -v -v 1200000000')
 
 
 def auto_ui(phone_ip):
@@ -17,7 +15,9 @@ def auto_ui(phone_ip):
     monkey_start.start()
 
     # adb shell kill -9 `adb shell ps | grep com.android.commands.monkey | awk '{print $2}'`
-    time.sleep(1800)
+    time.sleep(30)
+    pidstr = device.adb_shell("ps | grep monkey")
+    print(pidstr)
     pid = device.adb_shell("ps | grep monkey").split()[1]
     print("%s monkey pid is: %s" % (phone_ip, pid) + ",kill it")
     device.adb_shell("kill -9 " + pid)
@@ -72,21 +72,13 @@ def auto_ui(phone_ip):
     print("%s sleep 1 second..." % phone_ip)
     time.sleep(1)
 
-    print("%s test end!!!" % phone_ip)
+    print("auto_ui(phone_ip)方法的返回值：" + auto_ui(phone_ip))
     return True
 
 
 def find_bugs(phone_ip):
-    while True:
-        try:
-            print("%s auto ui start..." % (phone_ip, ))
-            rt = auto_ui(phone_ip)
-            print("%s auto ui complete, rt: %s" % (phone_ip, rt))
-            if rt is False:
-                break
-        except Exception as e:
-            print("auto ui exception: %s, %s" % (phone_ip, e))
-            break
+    while auto_ui(phone_ip) is True:
+        auto_ui(phone_ip)
 
 
 if __name__ == '__main__':
@@ -99,12 +91,12 @@ if __name__ == '__main__':
     t2.start()
     print('线程2启动')
 
-    t3 = Thread(target=find_bugs, args=('172.18.8.12',))
-    t3.start()
-    print('线程3启动')
+    # 3 = Thread(target=find_bugs, args=('172.18.8.12',))  # 7912
+    # t3.start()
+    # print('线程3启动')
 
-    t4 = Thread(target=find_bugs, args=('172.18.8.13',))
-    t4.start()
-    print('线程4启动')
+    # t4 = Thread(target=find_bugs, args=('172.18.8.13',))
+    # t4.start()
+    # print('线程4启动')
 
 
