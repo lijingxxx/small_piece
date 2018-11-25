@@ -5,7 +5,7 @@ import xlrd
 
 # file = r"/Users/chenming/ljx_workspace/python/src/main/resource/imei.xlsx"  # 打开指定路径中的文件
 
-#file = r"/Users/chenming/ljx_workspace/python/src/main/resource/result_sql_20180810141622_2018_08_10.xlsx"
+# file = r"/Users/chenming/ljx_workspace/python/src/main/resource/result_sql_20180810141622_2018_08_10.xlsx"
 
 file = r"E:\workspace\small_piece\src\main\resource\result_sql_20180810141622_2018_08_10.xlsx"
 
